@@ -7,11 +7,11 @@ public interface IRedisService<T> where T : class
 {
 	#region [String Section]
 
-	public Task SetStringRange(Dictionary<RedisKey, T?> inputs);
+	public Task SetStringRangeAsync(Dictionary<RedisKey, T?> inputs);
 
-	public Task<T?> GetString(RedisKey key);
+	public Task<T?> GetStringAsync(RedisKey key);
 
-	public Task<bool> SetString(RedisKey key, T? value, int? cacheDuration = null);
+	public Task<bool> SetStringAsync(RedisKey key, T? value, int? cacheDuration = null);
 
 	public List<T?> GetAllString(int page = 0, int pageSize = 20);
 
@@ -47,9 +47,9 @@ public interface IRedisService<T> where T : class
 
 	#region [Common Section]
 
-	public Task<bool> SetExpiration(RedisKey key) ;
+	public Task<bool> SetExpirationAsync(RedisKey key) ;
 
-	public Task<bool> Delete(RedisKey key);
+	public Task<bool> DeleteAsync(RedisKey key);
 
 	#endregion
 }

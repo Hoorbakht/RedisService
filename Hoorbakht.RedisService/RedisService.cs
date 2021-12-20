@@ -35,17 +35,17 @@ public class RedisService<T> : IRedisService<T>, IDisposable where T : class
 
 	#region [String Section]
 
-	public async Task SetStringRange(Dictionary<RedisKey, T?> inputs)
+	public async Task SetStringRangeAsync(Dictionary<RedisKey, T?> inputs)
 	{
-		foreach (var (key, value) in inputs) await SetString(key, value);
+		foreach (var (key, value) in inputs) await SetStringAsync(key, value);
 	}
 
-	public async Task<T?> GetString(RedisKey key) =>
+	public async Task<T?> GetStringAsync(RedisKey key) =>
 		_redisDatabase.KeyType(CompleteKey(key)) == RedisType.String
-			? await GetPrivateString(CompleteKey(key))
+			? await GetPrivateStringAsync(CompleteKey(key))
 			: default;
 
-	public async Task<bool> SetString(RedisKey key, T? value, int? cacheDuration = null) =>
+	public async Task<bool> SetStringAsync(RedisKey key, T? value, int? cacheDuration = null) =>
 		!cacheDuration.HasValue
 			? _cacheTimeInMinutes == -1
 				? await _redisDatabase.StringSetAsync(CompleteKey(key),
@@ -64,7 +64,7 @@ public class RedisService<T> : IRedisService<T>, IDisposable where T : class
 		return result
 			.Skip(page * pageSize)
 			.Take(pageSize)
-			.Select(x => GetPrivateString(x).Result)
+			.Select(x => GetPrivateStringAsync(x).Result)
 			.Where(x => x != null)
 			.ToList();
 	}
@@ -158,7 +158,7 @@ public class RedisService<T> : IRedisService<T>, IDisposable where T : class
 
 	public async Task<T?> GetHashAsync(RedisKey key) =>
 		_redisDatabase.KeyType(CompleteKey(key)) == RedisType.Hash
-			? await GetPrivateHash(CompleteKey(key))
+			? await GetPrivateHashAsync(CompleteKey(key))
 			: default;
 
 	public List<string> GetNearExpireHash(int days)
@@ -205,7 +205,7 @@ public class RedisService<T> : IRedisService<T>, IDisposable where T : class
 		return result
 			.Skip(page * pageSize)
 			.Take(pageSize)
-			.Select(x => GetPrivateHash(x).Result)
+			.Select(x => GetPrivateHashAsync(x).Result)
 			.Where(x => x != null)
 			.ToList();
 	}
@@ -232,16 +232,16 @@ public class RedisService<T> : IRedisService<T>, IDisposable where T : class
 
 	#region [Common Section]
 
-	public async Task<bool> CheckKeyExist(RedisKey key) =>
+	public async Task<bool> CheckKeyExistAsync(RedisKey key) =>
 		await _redisDatabase.KeyExistsAsync(key);
 
-	public async Task<bool> SetExpiration(RedisKey key) =>
+	public async Task<bool> SetExpirationAsync(RedisKey key) =>
 		await _redisDatabase.KeyExpireAsync(CompleteKey(key), TimeSpan.FromSeconds(5));
 
-	public async Task<bool> Delete(RedisKey key) =>
+	public async Task<bool> DeleteAsync(RedisKey key) =>
 		await _redisDatabase.KeyDeleteAsync(CompleteKey(key));
 
-	public async Task<bool> DeleteWithoutPrefix(RedisKey key) =>
+	public async Task<bool> DeleteWithoutPrefixAsync(RedisKey key) =>
 		await _redisDatabase.KeyDeleteAsync(key);
 
 	public void Dispose() =>
@@ -254,11 +254,11 @@ public class RedisService<T> : IRedisService<T>, IDisposable where T : class
 	public async Task<long> SetGeoAsync(RedisKey key, GeoEntry[] entry) =>
 		await _redisDatabase.GeoAddAsync(CompleteKey(key), entry);
 
-	public async Task<List<GeoRadiusResult>> GetRadiusByMember(RedisKey key, RedisValue center, double radiusInKm) =>
+	public async Task<List<GeoRadiusResult>> GetRadiusByMemberAsync(RedisKey key, RedisValue center, double radiusInKm) =>
 		(await _redisDatabase.GeoRadiusAsync(CompleteKey(key), center, radiusInKm,
 			GeoUnit.Kilometers, -1, Order.Ascending, GeoRadiusOptions.WithDistance)).ToList();
 
-	public async Task<List<GeoRadiusResult>> GetRadiusByLocation(RedisKey key, double lat, double @long, double radiusInKm) =>
+	public async Task<List<GeoRadiusResult>> GetRadiusByLocationAsync(RedisKey key, double lat, double @long, double radiusInKm) =>
 		(await _redisDatabase.GeoRadiusAsync(CompleteKey(key), lat, @long, radiusInKm,
 			GeoUnit.Kilometers, -1, Order.Ascending, GeoRadiusOptions.WithDistance)).ToList();
 
@@ -268,10 +268,10 @@ public class RedisService<T> : IRedisService<T>, IDisposable where T : class
 
 	#region [Private Method(s)]
 
-	private async Task<T?> GetPrivateHash(RedisKey key) =>
+	private async Task<T?> GetPrivateHashAsync(RedisKey key) =>
 		ConvertToT(await _redisDatabase.HashGetAllAsync(key));
 
-	private async Task<T?> GetPrivateString(RedisKey key) =>
+	private async Task<T?> GetPrivateStringAsync(RedisKey key) =>
 		FromByteArray(await _redisDatabase.StringGetAsync(key));
 
 	private RedisKey CompleteKey(string? key) =>
