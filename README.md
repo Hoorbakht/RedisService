@@ -21,7 +21,7 @@ Inject the `IRedisService<Person>` service. So in `Program.cs` add:
 var configuration = new RedisConfiguration(-1, "Person", "localhost:6379", 1);
 
 // First Arguemnt is Configuration
-// Second Argument is Name Contract Name
+// Second Argument is Contract Name
 builder.Services.AddSingleton<IRedisService<Person>>(_ => new RedisService<Person>(configuration, "RedisPerson"));
 ```
 
