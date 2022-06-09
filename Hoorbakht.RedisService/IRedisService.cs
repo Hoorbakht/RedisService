@@ -23,7 +23,7 @@ public interface IRedisService<T> where T : class
 
 	#region [Hash Section]
 
-	public Task SetHashRangeAsync(Dictionary<string?, T> inputs);
+	public Task SetHashRangeAsync(Dictionary<string, T> inputs);
 
 	public Task SetHashRangeAsync(List<T> inputs, Expression<Func<T, object>> keySelector);
 
@@ -47,7 +47,7 @@ public interface IRedisService<T> where T : class
 
 	#region [Common Section]
 
-	public Task<bool> SetExpirationAsync(RedisKey key) ;
+	public Task<bool> SetExpirationAsync(RedisKey key);
 
 	public Task<bool> DeleteAsync(RedisKey key);
 
