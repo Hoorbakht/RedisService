@@ -245,8 +245,11 @@ public class RedisService<T> : IRedisService<T>, IDisposable where T : class
 	public async Task<bool> DeleteWithoutPrefixAsync(RedisKey key) =>
 		await _redisDatabase.KeyDeleteAsync(key);
 
-	public void Dispose() =>
+	public void Dispose()
+	{
 		_redisDatabase.Multiplexer.Dispose();
+		GC.SuppressFinalize(this);
+	}
 
 	#endregion
 
