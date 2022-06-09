@@ -1,9 +1,10 @@
-﻿using Newtonsoft.Json;
-using System.Reflection;
+﻿using Hoorbakht.RedisService.Contracts;
+using Newtonsoft.Json;
 using StackExchange.Redis;
+using System.Collections;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Xml.Serialization;
-using Hoorbakht.RedisService.Contracts;
 
 namespace Hoorbakht.RedisService;
 
@@ -244,8 +245,11 @@ public class RedisService<T> : IRedisService<T>, IDisposable where T : class
 	public async Task<bool> DeleteWithoutPrefixAsync(RedisKey key) =>
 		await _redisDatabase.KeyDeleteAsync(key);
 
-	public void Dispose() =>
+	public void Dispose()
+	{
 		_redisDatabase.Multiplexer.Dispose();
+		GC.SuppressFinalize(this);
+	}
 
 	#endregion
 
@@ -279,15 +283,21 @@ public class RedisService<T> : IRedisService<T>, IDisposable where T : class
 
 	private static HashEntry[] ConvertToHashEntries(T t)
 	{
-		var data = typeof(T).GetProperties()
-			.Where(x => x.GetValue(t) != null)
-			.Select(x => new HashEntry(x.Name, x.GetValue(t, null) == null
-				? string.Empty
-				: x.PropertyType.Namespace == "System.Collections.Generic"
-				  || x.PropertyType.IsArray
-				  || x.PropertyType.IsDefined(typeof(CacheableContract))
-					? JsonConvert.SerializeObject(x.GetValue(t, null))
-					: x.GetValue(t, null)?.ToString())).ToList();
+		var data = new List<HashEntry>();
+		if (typeof(T).GetInterface(nameof(IEnumerable)) != null || typeof(T).IsArray)
+			data.Add(new HashEntry("Item", JsonConvert.SerializeObject(t)));
+		else
+		{
+			data = typeof(T).GetProperties()
+				.Where(x => x.GetValue(t) != null)
+				.Select(x => new HashEntry(x.Name, x.GetValue(t, null) == null
+					? string.Empty
+					: x.PropertyType.Namespace == "System.Collections.Generic"
+					  || x.PropertyType.IsArray
+					  || x.PropertyType.IsDefined(typeof(CacheableContract))
+						? JsonConvert.SerializeObject(x.GetValue(t, null))
+						: x.GetValue(t, null)?.ToString())).ToList();
+		}
 		data.Add(new HashEntry("_Type", typeof(T).Name));
 		return data.ToArray();
 	}
@@ -296,7 +306,14 @@ public class RedisService<T> : IRedisService<T>, IDisposable where T : class
 	{
 		if (hash.All(x => x.Name != "_Type")) return null;
 		if (hash.Single(x => x.Name == "_Type").Value != typeof(T).Name) return null;
+
 		var result = Activator.CreateInstance<T>();
+
+		if (typeof(T).GetInterface(nameof(IEnumerable)) != null || typeof(T).IsArray)
+		{
+			result = JsonConvert.DeserializeObject<T>(hash.Single(x => x.Name == "Item").Value);
+			return result;
+		}
 
 		foreach (var item in typeof(T).GetProperties())
 		{
